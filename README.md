@@ -6,4 +6,4 @@
 
 **谋事，让每一件事都在掌握之中。**
 
-<img src="logo.png" alt="planwise_logo_desi_image_" style="zoom:50%;" />
+![LOGO](LOGO.png)
