@@ -2,14 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/navigation_today"
-        android:icon="@android:drawable/ic_menu_today"
+        android:icon="@drawable/ic_bottom_nav_today"
         android:title="今日待办" />
     <item
         android:id="@+id/navigation_calendar"
-        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:icon="@drawable/ic_bottom_nav_calendar"
         android:title="日程" />
     <item
         android:id="@+id/navigation_profile"
-        android:icon="@android:drawable/ic_menu_myplaces"
+        android:icon="@drawable/ic_bottom_nav_profile"
         android:title="我的" />
 </menu>
