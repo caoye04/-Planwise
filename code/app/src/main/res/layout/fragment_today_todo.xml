@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context=".ui.fragment.TodayTodoFragment">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
     <TextView
         android:id="@+id/text_view_title"
         android:layout_width="match_parent"
@@ -27,7 +31,7 @@
         android:text="今天没有待办事项"
         android:textAlignment="center"
         android:visibility="gone" />
-
+    </LinearLayout>
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add"
         android:layout_width="wrap_content"
@@ -36,5 +40,4 @@
         android:layout_margin="16dp"
         android:contentDescription="添加新任务"
         android:src="@android:drawable/ic_input_add" />
-
-</LinearLayout>
+</FrameLayout>
