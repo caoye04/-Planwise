@@ -34,6 +34,7 @@
         <activity
             android:name=".ui.activity.AddScheduleActivity"
             android:exported="false"
+            android:theme="@style/Theme.MyApp.ActionBar"
             android:parentActivityName=".ui.activity.MainActivity" />
 
         <!-- 日程详情Activity -->
