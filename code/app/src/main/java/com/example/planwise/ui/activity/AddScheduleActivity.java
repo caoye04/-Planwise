@@ -44,9 +44,11 @@ public class AddScheduleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_schedule);
 
-        // Enable back button in action bar
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("New Schedule");
+        // 安全地设置 ActionBar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("新建待办");
+        }
 
         // Setup ViewModel
         viewModel = new ViewModelProvider(this).get(ScheduleViewModel.class);
