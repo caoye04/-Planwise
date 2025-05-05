@@ -6,4 +6,8 @@
     </style>
 
     <style name="Theme.Planwise" parent="Base.Theme.Planwise" />
+
+    <style name="Theme.MyApp.ActionBar" parent="Theme.MaterialComponents.DayNight">
+<!--        <item name="colorPrimary">@color/white</item> &lt;!&ndash; 设置ActionBar背景为白色 &ndash;&gt;-->
+    </style>
 </resources>
