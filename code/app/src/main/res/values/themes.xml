@@ -1,13 +1,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Planwise" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <style name="Theme.MyApp.ActionBar" parent="Theme.Material3.DayNight">
+        <!-- 设置状态栏颜色为白色 -->
+        <item name="android:statusBarColor">@android:color/white</item>
+        <!-- 启用深色状态栏字体 -->
+        <item name="android:windowLightStatusBar">true</item>
     </style>
-
-    <style name="Theme.Planwise" parent="Base.Theme.Planwise" />
-
-    <style name="Theme.MyApp.ActionBar" parent="Theme.MaterialComponents.DayNight">
-<!--        <item name="colorPrimary">@color/white</item> &lt;!&ndash; 设置ActionBar背景为白色 &ndash;&gt;-->
+    <style name="Theme.MyApp.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 设置状态栏颜色为白色 -->
+        <item name="android:statusBarColor">@android:color/white</item>
+        <!-- 启用深色状态栏字体 -->
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

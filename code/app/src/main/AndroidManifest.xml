@@ -17,7 +17,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Planwise"
+        android:theme="@style/Theme.MyApp.NoActionBar"
         tools:targetApi="31">
 
         <!-- 主Activity -->
@@ -41,6 +41,7 @@
         <activity
             android:name=".ui.activity.ScheduleDetailActivity"
             android:exported="false"
+            android:theme="@style/Theme.MyApp.ActionBar"
             android:parentActivityName=".ui.activity.MainActivity" />
 
         <!-- 通知服务 -->
