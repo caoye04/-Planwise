@@ -59,11 +59,12 @@
             <!-- Add separate filter button -->
             <ImageButton
                 android:id="@+id/btn_advanced_filter"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="高级筛选"
-                android:src="@drawable/ic_bottom_nav_today"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_filter"
                 app:tint="?attr/colorPrimary" />
         </LinearLayout>
     <androidx.recyclerview.widget.RecyclerView

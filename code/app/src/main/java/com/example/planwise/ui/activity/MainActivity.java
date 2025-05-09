@@ -15,8 +15,8 @@ import com.example.planwise.ui.viewmodel.UserViewModel;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ScheduleViewModel scheduleViewModel;
-    private UserViewModel userViewModel;
+//    private ScheduleViewModel scheduleViewModel;
+//    private UserViewModel userViewModel;
     private NavController navController;
 
     @Override
@@ -24,9 +24,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Setup ViewModels
-        scheduleViewModel = new ViewModelProvider(this).get(ScheduleViewModel.class);
-        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+//         Setup ViewModels
+//        scheduleViewModel = new ViewModelProvider(this).get(ScheduleViewModel.class);
+//        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
 
         // Setup navigation
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -38,8 +38,8 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(bottomNavigationView, navController);
 
         // Observe login state
-        userViewModel.getIsLoggedIn().observe(this, isLoggedIn -> {
-            // Optional: Handle login/logout state changes
-        });
+//        userViewModel.getIsLoggedIn().observe(this, isLoggedIn -> {
+//            // Optional: Handle login/logout state changes
+//        });
     }
 }

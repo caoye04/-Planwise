@@ -156,4 +156,5 @@ public class ScheduleViewModel extends AndroidViewModel {
     public void syncWithCloud(String userId) {
         repository.syncWithCloud(userId);
     }
+
 }
