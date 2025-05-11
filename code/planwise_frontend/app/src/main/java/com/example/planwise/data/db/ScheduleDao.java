@@ -31,6 +31,12 @@ public interface ScheduleDao {
     @Query("SELECT * FROM schedules ORDER BY scheduledDate ASC")
     LiveData<List<Schedule>> getAllSchedules();
 
+    @Query("SELECT * FROM schedules ORDER BY scheduledDate ASC")
+    List<Schedule> getAllSchedulesSync();
+
+    @Query("DELETE FROM schedules")
+    void deleteAllSchedules();
+
     @Query("SELECT * FROM schedules WHERE isCompleted = 0 ORDER BY scheduledDate ASC")
     LiveData<List<Schedule>> getIncompleteSchedules();
 

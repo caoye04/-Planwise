@@ -1,12 +1,15 @@
 package com.example.planwise.ui.fragment;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.Switch;
+import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,21 +19,19 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.planwise.R;
-import com.example.planwise.data.model.User;
+import com.example.planwise.data.api.ApiClient;
+import com.example.planwise.data.repository.ScheduleRepository;
 import com.example.planwise.ui.viewmodel.ScheduleViewModel;
-import com.example.planwise.ui.viewmodel.UserViewModel;
 
 public class ProfileFragment extends Fragment {
 
-    private UserViewModel userViewModel;
     private ScheduleViewModel scheduleViewModel;
-
     private TextView textViewUsername;
     private TextView textViewEmail;
-    private Switch switchSync;
-    private Button buttonLogin;
-    private Button buttonLogout;
-    private Button buttonSyncNow;
+    private Button buttonLocalToCloud;
+    private Button buttonCloudToLocal;
+    private Button buttonSetServerIp;
+    private ProgressBar progressBarSync;
 
     @Nullable
     @Override
@@ -42,74 +43,87 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Setup ViewModels
-        userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
+        // Setup ViewModel
         scheduleViewModel = new ViewModelProvider(requireActivity()).get(ScheduleViewModel.class);
 
         // Initialize views
         textViewUsername = view.findViewById(R.id.text_view_username);
         textViewEmail = view.findViewById(R.id.text_view_email);
-        switchSync = view.findViewById(R.id.switch_sync);
-        buttonLogin = view.findViewById(R.id.button_login);
-        buttonLogout = view.findViewById(R.id.button_logout);
-        buttonSyncNow = view.findViewById(R.id.button_sync_now);
+        buttonLocalToCloud = view.findViewById(R.id.button_local_to_cloud);
+        buttonCloudToLocal = view.findViewById(R.id.button_cloud_to_local);
+        buttonSetServerIp = view.findViewById(R.id.button_set_server_ip);
+        progressBarSync = view.findViewById(R.id.progress_bar_sync);
 
-        // Observe user data
-        userViewModel.getCurrentUser().observe(getViewLifecycleOwner(), this::updateUI);
-        userViewModel.getIsLoggedIn().observe(getViewLifecycleOwner(), this::updateLoginButtons);
+        // Set default user
+        textViewUsername.setText("Planwiser");
+        textViewEmail.setText("用户默认");
 
-        // Setup click listeners
-        buttonLogin.setOnClickListener(v -> {
-            // In a real app, this would launch a login screen
-            // For simplicity, we'll just do a mock login
-            userViewModel.login("user123", "Demo User", "user@example.com");
-            Toast.makeText(getContext(), "Logged in as Demo User", Toast.LENGTH_SHORT).show();
-        });
+        // Setup click listeners for sync buttons
+        buttonLocalToCloud.setOnClickListener(v -> syncLocalToCloud());
+        buttonCloudToLocal.setOnClickListener(v -> syncCloudToLocal());
+        buttonSetServerIp.setOnClickListener(v -> showIpSettingDialog());
 
-        buttonLogout.setOnClickListener(v -> {
-            userViewModel.logout();
-            Toast.makeText(getContext(), "Logged out", Toast.LENGTH_SHORT).show();
-        });
-
-        buttonSyncNow.setOnClickListener(v -> {
-            User currentUser = userViewModel.getCurrentUser().getValue();
-            if (currentUser != null && currentUser.isSyncEnabled()) {
-                scheduleViewModel.syncWithCloud(currentUser.getUserId());
-                Toast.makeText(getContext(), "Syncing data...", Toast.LENGTH_SHORT).show();
+        // Observe syncing status
+        scheduleViewModel.getIsSyncing().observe(getViewLifecycleOwner(), isSyncing -> {
+            if (isSyncing) {
+                progressBarSync.setVisibility(View.VISIBLE);
+                buttonLocalToCloud.setEnabled(false);
+                buttonCloudToLocal.setEnabled(false);
             } else {
-                Toast.makeText(getContext(), "Sync is disabled", Toast.LENGTH_SHORT).show();
+                progressBarSync.setVisibility(View.GONE);
+                buttonLocalToCloud.setEnabled(true);
+                buttonCloudToLocal.setEnabled(true);
             }
         });
+    }
 
-        switchSync.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            userViewModel.updateSyncPreference(isChecked);
-            Toast.makeText(getContext(), isChecked ? "Sync enabled" : "Sync disabled", Toast.LENGTH_SHORT).show();
+    private void syncLocalToCloud() {
+        scheduleViewModel.syncLocalToCloud(new ScheduleRepository.OnSyncCompleteListener() {
+            @Override
+            public void onSyncComplete(boolean success, String message) {
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                });
+            }
         });
     }
 
-    private void updateUI(User user) {
-        if (user != null) {
-            textViewUsername.setText(user.getUsername());
-            textViewEmail.setText(user.getEmail());
-            switchSync.setChecked(user.isSyncEnabled());
-            switchSync.setEnabled(true);
-            buttonSyncNow.setEnabled(user.isSyncEnabled());
-        } else {
-            textViewUsername.setText("Not logged in");
-            textViewEmail.setText("");
-            switchSync.setChecked(false);
-            switchSync.setEnabled(false);
-            buttonSyncNow.setEnabled(false);
-        }
+    private void syncCloudToLocal() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("确认同步")
+                .setMessage("从云端同步将覆盖本地所有数据，确定要继续吗？")
+                .setPositiveButton("确定", (dialog, which) -> {
+                    scheduleViewModel.syncCloudToLocal(new ScheduleRepository.OnSyncCompleteListener() {
+                        @Override
+                        public void onSyncComplete(boolean success, String message) {
+                            requireActivity().runOnUiThread(() -> {
+                                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
-    private void updateLoginButtons(Boolean isLoggedIn) {
-        if (isLoggedIn) {
-            buttonLogin.setVisibility(View.GONE);
-            buttonLogout.setVisibility(View.VISIBLE);
-        } else {
-            buttonLogin.setVisibility(View.VISIBLE);
-            buttonLogout.setVisibility(View.GONE);
-        }
+    private void showIpSettingDialog() {
+        EditText input = new EditText(getContext());
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setHint("例如: 192.168.1.100:8000");
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("设置服务器IP和端口")
+                .setMessage("请输入Django服务器的IP地址和端口")
+                .setView(input)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    String ipAndPort = input.getText().toString().trim();
+                    if (!ipAndPort.isEmpty()) {
+                        // 设置服务器IP和端口
+                        ApiClient.setBaseUrl("http://" + ipAndPort + "/");
+                        Toast.makeText(getContext(), "服务器地址已设置为: " + ipAndPort, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 }

@@ -1,35 +1,42 @@
 package com.example.planwise.data.repository;
 
-
 import android.app.Application;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
-//import com.example.planwise.data.ApiClient;
-//import com.example.planwise.data.api.ApiService;
+import com.example.planwise.data.api.ApiClient;
+import com.example.planwise.data.api.ApiService;
 import com.example.planwise.data.db.AppDatabase;
 import com.example.planwise.data.db.ScheduleDao;
 import com.example.planwise.data.model.Schedule;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import retrofit2.Call;
+import retrofit2.Response;
+
 public class ScheduleRepository {
+    private static final String TAG = "ScheduleRepository";
     private ScheduleDao scheduleDao;
-//    private ApiService apiService; todo
+    private ApiService apiService;
     private ExecutorService executorService;
     private LiveData<List<Schedule>> allSchedules;
     private LiveData<List<Schedule>> incompleteSchedules;
     private LiveData<List<Schedule>> completedSchedules;
     private LiveData<List<String>> allCategories;
+    private MutableLiveData<Boolean> isSyncing = new MutableLiveData<>(false);
 
     public ScheduleRepository(Application application) {
         AppDatabase database = AppDatabase.getInstance(application);
         scheduleDao = database.scheduleDao();
-//        apiService = ApiClient.getApiService(); TODO
+        apiService = ApiClient.getApiService();
         executorService = Executors.newFixedThreadPool(4);
 
         allSchedules = scheduleDao.getAllSchedules();
@@ -92,40 +99,101 @@ public class ScheduleRepository {
         return allCategories;
     }
 
-    // Cloud sync operations
-    public void syncWithCloud(String userId) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // Step 1: Fetch local unsynced schedules
-                    Date lastSyncTime = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // Last 24 hours
-                    List<Schedule> unSyncedSchedules = scheduleDao.getUnSyncedSchedules(lastSyncTime);
+    public LiveData<Boolean> getIsSyncing() {
+        return isSyncing;
+    }
 
-                    // Step 2: Upload unsynced schedules to server
-                    // apiService.uploadSchedules(userId, unSyncedSchedules);
+    // 同步本地数据到云端
+    public void syncLocalToCloud(OnSyncCompleteListener listener) {
+        isSyncing.postValue(true);
 
-                    // Step 3: Fetch latest schedules from server
-                    // List<Schedule> cloudSchedules = apiService.getSchedules(userId).execute().body();
+        executorService.execute(() -> {
+            try {
+                // 获取本地所有日程
+                List<Schedule> localSchedules = getAllSchedulesSync();
 
-                    // Step 4: Update local database with cloud data
-                    // handleCloudSchedules(cloudSchedules);
+                // 上传到云端
+                Call<List<Schedule>> call = apiService.uploadAllSchedules(localSchedules);
+                Response<List<Schedule>> response = call.execute();
 
-                    // Mark all as synced
-                    for (Schedule schedule : unSyncedSchedules) {
-                        schedule.setLastSynced(new Date());
-                        scheduleDao.updateSchedule(schedule);
+                if (response.isSuccessful()) {
+                    // 同步成功
+                    if (listener != null) {
+                        listener.onSyncComplete(true, "本地数据已成功同步到云端");
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // Handle sync errors
+                } else {
+                    // 同步失败
+                    if (listener != null) {
+                        listener.onSyncComplete(false, "同步失败: " + response.message());
+                    }
                 }
+            } catch (IOException e) {
+                Log.e(TAG, "同步到云端失败", e);
+                if (listener != null) {
+                    listener.onSyncComplete(false, "同步失败: " + e.getMessage());
+                }
+            } finally {
+                isSyncing.postValue(false);
             }
         });
     }
 
-    // This would handle merging remote and local data
-    private void handleCloudSchedules(List<Schedule> cloudSchedules) {
-        // Implementation would merge data based on timestamps, priorities, etc.
+    // 同步云端数据到本地
+    public void syncCloudToLocal(OnSyncCompleteListener listener) {
+        isSyncing.postValue(true);
+
+        executorService.execute(() -> {
+            try {
+                // 从云端获取数据
+                Call<List<Schedule>> call = apiService.getAllSchedules();
+                Response<List<Schedule>> response = call.execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    // 清除本地数据并保存云端数据
+                    deleteAllSchedulesSync();
+                    List<Schedule> cloudSchedules = response.body();
+
+                    // 将云端数据插入到本地数据库
+                    for (Schedule schedule : cloudSchedules) {
+                        // 确保ID不冲突（可能需要根据你的ID生成策略调整）
+                        schedule.setId(0); // Room会自动生成新的ID
+                        scheduleDao.insertSchedule(schedule);
+                    }
+
+                    if (listener != null) {
+                        listener.onSyncComplete(true, "云端数据已成功同步到本地");
+                    }
+                } else {
+                    if (listener != null) {
+                        listener.onSyncComplete(false, "从云端获取数据失败: " + response.message());
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "从云端同步失败", e);
+                if (listener != null) {
+                    listener.onSyncComplete(false, "同步失败: " + e.getMessage());
+                }
+            } finally {
+                isSyncing.postValue(false);
+            }
+        });
+    }
+
+    // 获取所有日程（同步方法）
+    private List<Schedule> getAllSchedulesSync() {
+        // 这个方法需要内部使用，直接同步获取所有日程
+        AppDatabase db = AppDatabase.getInstance(null);
+        return db.scheduleDao().getAllSchedulesSync();
+    }
+
+    // 删除所有日程（同步方法）
+    private void deleteAllSchedulesSync() {
+        AppDatabase db = AppDatabase.getInstance(null);
+        db.scheduleDao().deleteAllSchedules();
+    }
+
+    // 同步完成监听器接口
+    public interface OnSyncCompleteListener {
+        void onSyncComplete(boolean success, String message);
     }
 }

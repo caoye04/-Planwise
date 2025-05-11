@@ -7,6 +7,7 @@
     android:orientation="vertical"
     android:padding="16dp"
     tools:context=".ui.fragment.ProfileFragment">
+
     <TextView
         android:id="@+id/text_view_title"
         android:layout_width="match_parent"
@@ -45,13 +46,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                tools:text="Demo User" />
+                tools:text="Planwiser" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="邮箱"
+                android:text="状态"
                 android:textStyle="bold" />
 
             <TextView
@@ -59,7 +60,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                tools:text="user@example.com" />
+                tools:text="用户默认" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -79,47 +80,46 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="设置"
+                android:text="云同步设置"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+
+            <Button
+                android:id="@+id/button_set_server_ip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="设置服务器地址" />
+
+            <ProgressBar
+                android:id="@+id/progress_bar_sync"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
 
-                <TextView
+                <Button
+                    android:id="@+id/button_local_to_cloud"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="启用云同步" />
+                    android:layout_marginEnd="4dp"
+                    android:text="将本地数据同步到云" />
 
-                <Switch
-                    android:id="@+id/switch_sync"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                <Button
+                    android:id="@+id/button_cloud_to_local"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="将云数据同步到本地" />
             </LinearLayout>
-
-            <Button
-                android:id="@+id/button_sync_now"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="立即同步" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-
-    <Button
-        android:id="@+id/button_login"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="登录" />
-
-    <Button
-        android:id="@+id/button_logout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="退出登录"
-        android:visibility="gone" />
 </LinearLayout>

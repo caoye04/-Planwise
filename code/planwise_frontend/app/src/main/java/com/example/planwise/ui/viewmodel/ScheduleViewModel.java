@@ -1,6 +1,5 @@
 package com.example.planwise.ui.viewmodel;
 
-
 import android.app.Application;
 
 import androidx.lifecycle.AndroidViewModel;
@@ -35,6 +34,9 @@ public class ScheduleViewModel extends AndroidViewModel {
     private MutableLiveData<Date> endDate = new MutableLiveData<>();
     private LiveData<List<Schedule>> schedulesByDateRange;
 
+    // 同步状态
+    private LiveData<Boolean> isSyncing;
+
     public ScheduleViewModel(Application application) {
         super(application);
         repository = new ScheduleRepository(application);
@@ -42,6 +44,7 @@ public class ScheduleViewModel extends AndroidViewModel {
         incompleteSchedules = repository.getIncompleteSchedules();
         completedSchedules = repository.getCompletedSchedules();
         allCategories = repository.getAllCategories();
+        isSyncing = repository.getIsSyncing();
 
         // Initialize with today's date
         selectedDate.setValue(new Date());
@@ -152,9 +155,19 @@ public class ScheduleViewModel extends AndroidViewModel {
         return repository.getSchedulesBetweenDates(startOfDay, endOfDay);
     }
 
-    // Cloud sync
-    public void syncWithCloud(String userId) {
-        repository.syncWithCloud(userId);
+
+    // 同步本地数据到云端
+    public void syncLocalToCloud(ScheduleRepository.OnSyncCompleteListener listener) {
+        repository.syncLocalToCloud(listener);
     }
 
+    // 同步云端数据到本地
+    public void syncCloudToLocal(ScheduleRepository.OnSyncCompleteListener listener) {
+        repository.syncCloudToLocal(listener);
+    }
+
+    // 获取同步状态
+    public LiveData<Boolean> getIsSyncing() {
+        return isSyncing;
+    }
 }
