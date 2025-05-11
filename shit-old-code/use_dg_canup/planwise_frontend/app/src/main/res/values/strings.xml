@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">谋事Planwise</string>
+    <string name="title_today_todo">今日待办</string>
+    <string name="title_calendar">日程</string>
+    <string name="title_profile">我的</string>
+    <string name="add_new_schedule">添加新日程</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="login">登录</string>
+    <string name="logout">退出登录</string>
+    <string name="sync_now">立即同步</string>
+    <string name="enable_sync">启用云同步</string>
+    <string name="no_schedules_today">今天没有日程安排</string>
+</resources>
