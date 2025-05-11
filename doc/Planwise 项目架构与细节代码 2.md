@@ -3,21 +3,15 @@
 
 我目前已经完成了：添加、排序、筛选等基础功能
 
-并做了用户界面的UI部分。我现在想把用户界面丰富好！并且利用firebase工具做好用户数据与云端同步这部分。
+也尝试做了依靠firebase做的登录与数据云同步功能。
 
-这一部分的UI逻辑似乎有点奇怪。我在想要不要把云同步这个按钮变成两个：
-把本地数据同步到云+把云数据同步到本地
-然后登录的逻辑似乎也得优化。
+但是在现在的情况下是我登陆后是不显示登录状态的，应该就是登陆失败了我很不理解！
 
-我希望你帮我：
-1. 从0开始开始firebase，并搭建好后端支持
-2. 完善好对应的JAVA和UI代码，来做好完整的用户与云同步功能
-3. 按照步骤展示我应该做的和修改的代码，在每一步中我希望你能细节地指出要改的代码的具体文件名和位置
-4. 关于登录，我希望UI界面简洁地提示输入用户名和邮箱即可，直接点击登录。再点就可以退出登录。不要做google账号登录什么的。
+帮我分析一下目前的代码应该怎么改
 
-值得一提我的环境是：AndriodStudio+JAVA 的原生框架的
 
-我自己试了一遍点击登录直接闪退了真的无语
+
+
 
 # Planwise 项目架构与细节代码
 
@@ -49,6 +43,9 @@ app/
 │	│   │   ├── AppDatabase.java
 │	│   │   ├── DateConverter.java
 │	│   │   └── ScheduleDao.java
+│	│   ├── firebase/
+│	│   │   ├── FirebaseAuthHelper.java
+│	│   │   ├── FirestoreHelper.java
 │	│   ├── model/
 │	│   │   ├── Schedule.java
 │	│   │   └── User.java
@@ -76,8 +73,11 @@ app/
 │   │   ├── activity_add_schedule.xml
 │   │   ├── activity_main.xml
 │   │   ├── activity_schedule_detail.xml
+│   │   ├── dialog_login.xml
+│   │   ├── dialog_sync_options.xml
 │   │   ├── dialog_time_filter.xml
 │   │   ├── fragment_calendar.xml
+│   │   ├── fragment_profile.xml
 │   │   ├── fragment_profile.xml
 │   │   ├── fragment_today_todo.xml
 │   │   └── item_schedule.xml
@@ -88,10 +88,213 @@ app/
 │   ├── navigation/
 │   ├── values/
 │   └── xml/
+├── google-services.json
+├── build.gradle.kts(Project)
+├── build.gradle.kts(APP)
+├── settings.gradle.kts
 └── AndroidManifest.xml
 ```
 
+### google-services.json
+
+```
+{
+  "project_info": {
+    "project_number": "616297993239",
+    "project_id": "planwise-38e69",
+    "storage_bucket": "planwise-38e69.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:616297993239:android:e8ab5f068b072aad077852",
+        "android_client_info": {
+          "package_name": "com.example.planwise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLI-qfAMK7iD2Tgf3TOiiF6fEyt7Z5MoM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+```
+
+### build.gradle.kts(Project)
+
+```
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+}
+buildscript {
+    dependencies {
+        // 添加Google Services Gradle插件
+        classpath("com.google.gms:google-services:4.4.1")
+    }
+}
+```
+
+### build.gradle.kts(APP)
+
+```kts
+plugins {
+    alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
+}
+
+android {
+    namespace = "com.example.planwise"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.planwise"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity)
+    implementation(libs.constraintlayout)
+    implementation(libs.navigation.fragment)
+    implementation(libs.navigation.ui)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
+    // Room数据库依赖
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+
+    // Lifecycle组件 (ViewModel和LiveData)
+    implementation("androidx.lifecycle:lifecycle-viewmodel:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-livedata:2.7.0")
+
+    // WorkManager (用于后台同步)
+    implementation("androidx.work:work-runtime:2.9.0")
+
+    // Retrofit (网络请求)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Gson (JSON解析)
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // Firebase依赖
+    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+}
+```
+
+### AndroidManifest.xml
+
+```
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 添加必要的权限 -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- 云同步需要 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- 检查网络状态 -->
+    <uses-permission android:name="android.permission.VIBRATE" /> <!-- 通知振动 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /> <!-- 设备重启后恢复提醒 -->
+
+    <!--        android:name=".PlanwiseApplication"-->
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApp.NoActionBar"
+        tools:targetApi="31">
+
+        <!-- 主Activity -->
+        <activity
+            android:name=".ui.activity.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 添加日程Activity -->
+        <activity
+            android:name=".ui.activity.AddScheduleActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApp.ActionBar"
+            android:parentActivityName=".ui.activity.MainActivity" />
+
+        <!-- 日程详情Activity -->
+        <activity
+            android:name=".ui.activity.ScheduleDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApp.ActionBar"
+            android:parentActivityName=".ui.activity.MainActivity" />
+
+        <!-- 通知服务 -->
+<!--        <receiver-->
+<!--            android:name=".utils.NotificationReceiver"-->
+<!--            android:exported="false">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+        <!-- 确保WorkManager正常工作的Provider -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+    </application>
+
+</manifest>
+```
+
 ### JAVA（依照框架内容进行排序）
+
+#### db / AppDatabase.java
 
 ```java
 package com.example.planwise.data.db;
@@ -130,6 +333,8 @@ public abstract class AppDatabase extends RoomDatabase {
 }
 ```
 
+#### db / DateConverter.java
+
 ```java
 package com.example.planwise.data.db;
 
@@ -150,6 +355,8 @@ public class DateConverter {
 }
 
 ```
+
+#### db /  ScheduleDao.java
 
 ```java
 package com.example.planwise.data.db;
@@ -207,6 +414,315 @@ public interface ScheduleDao {
     List<Schedule> getUnSyncedSchedules(Date lastSync);
 }
 ```
+
+#### firebase/FirebaseAuthHelper.java
+
+```java
+package com.example.planwise.data.firebase;
+
+import androidx.annotation.NonNull;
+import android.util.Log;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
+
+public class FirebaseAuthHelper {
+    private static final String TAG = "FirebaseAuthHelper";
+    private FirebaseAuth mAuth;
+    private static FirebaseAuthHelper instance;
+    private AuthCallback mCallback;
+
+    public interface AuthCallback {
+        void onSuccess(FirebaseUser user);
+        void onFailure(Exception e);
+    }
+
+    private FirebaseAuthHelper() {
+        mAuth = FirebaseAuth.getInstance();
+    }
+
+    public static synchronized FirebaseAuthHelper getInstance() {
+        if (instance == null) {
+            instance = new FirebaseAuthHelper();
+        }
+        return instance;
+    }
+
+    public void setAuthCallback(AuthCallback callback) {
+        this.mCallback = callback;
+    }
+
+    public FirebaseUser getCurrentUser() {
+        return mAuth.getCurrentUser();
+    }
+
+    public boolean isUserLoggedIn() {
+        return mAuth.getCurrentUser() != null;
+    }
+
+    public void signInWithEmailAndPassword(String email, String password) {
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "signInWithEmail:success");
+                            if (mCallback != null) {
+                                mCallback.onSuccess(mAuth.getCurrentUser());
+                            }
+                        } else {
+                            Log.w(TAG, "signInWithEmail:failure", task.getException());
+                            if (mCallback != null) {
+                                mCallback.onFailure(task.getException());
+                            }
+                        }
+                    }
+                });
+    }
+
+    public void createUserWithEmailAndPassword(String email, String password, final String username) {
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "createUserWithEmail:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                    .setDisplayName(username)
+                                    .build();
+
+                            user.updateProfile(profileUpdates)
+                                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Void> task) {
+                                            if (task.isSuccessful()) {
+                                                Log.d(TAG, "User profile updated.");
+                                                if (mCallback != null) {
+                                                    mCallback.onSuccess(user);
+                                                }
+                                            }
+                                        }
+                                    });
+                        } else {
+                            Log.w(TAG, "createUserWithEmail:failure", task.getException());
+                            if (mCallback != null) {
+                                mCallback.onFailure(task.getException());
+                            }
+                        }
+                    }
+                });
+    }
+
+    public void signOut() {
+        mAuth.signOut();
+    }
+}
+```
+
+#### firebase/FirestoreHelper.java
+
+```java
+package com.example.planwise.data.firebase;
+
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import com.example.planwise.data.model.Schedule;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class FirestoreHelper {
+    private static final String TAG = "FirestoreHelper";
+    private static final String SCHEDULES_COLLECTION = "schedules";
+    private static final String USERS_COLLECTION = "users";
+
+    private FirebaseFirestore db;
+    private static FirestoreHelper instance;
+
+    public interface FirestoreCallback {
+        void onSuccess(List<Schedule> schedules);
+        void onFailure(Exception e);
+    }
+
+    private FirestoreHelper() {
+        db = FirebaseFirestore.getInstance();
+    }
+
+    public static synchronized FirestoreHelper getInstance() {
+        if (instance == null) {
+            instance = new FirestoreHelper();
+        }
+        return instance;
+    }
+
+    // 将Schedule对象转换为Firestore可存储的Map
+    private Map<String, Object> scheduleToMap(Schedule schedule) {
+        Map<String, Object> scheduleMap = new HashMap<>();
+        scheduleMap.put("id", schedule.getId());
+        scheduleMap.put("title", schedule.getTitle());
+        scheduleMap.put("description", schedule.getDescription());
+        scheduleMap.put("scheduledDate", schedule.getScheduledDate());
+        scheduleMap.put("location", schedule.getLocation());
+        scheduleMap.put("category", schedule.getCategory());
+        scheduleMap.put("isCompleted", schedule.isCompleted());
+        scheduleMap.put("priority", schedule.getPriority());
+        scheduleMap.put("isRecurring", schedule.isRecurring());
+        scheduleMap.put("recurringPattern", schedule.getRecurringPattern());
+        scheduleMap.put("lastSynced", new Date());
+        return scheduleMap;
+    }
+
+    // 将Firestore文档转换为Schedule对象
+    private Schedule documentToSchedule(DocumentSnapshot document) {
+        if (document == null || !document.exists()) {
+            return null;
+        }
+
+        long id = document.getLong("id") != null ? document.getLong("id") : 0;
+        String title = document.getString("title");
+        String description = document.getString("description");
+        Date scheduledDate = document.getDate("scheduledDate");
+        String location = document.getString("location");
+        String category = document.getString("category");
+        boolean isCompleted = document.getBoolean("isCompleted") != null ?
+                document.getBoolean("isCompleted") : false;
+
+        Schedule schedule = new Schedule(title, description, scheduledDate, location, category, isCompleted);
+        schedule.setId(id);
+
+        // 设置其他字段
+        if (document.getLong("priority") != null) {
+            schedule.setPriority(document.getLong("priority").intValue());
+        }
+
+        if (document.getBoolean("isRecurring") != null) {
+            schedule.setRecurring(document.getBoolean("isRecurring"));
+        }
+
+        schedule.setRecurringPattern(document.getString("recurringPattern"));
+        schedule.setLastSynced(document.getDate("lastSynced"));
+
+        return schedule;
+    }
+
+    // 保存用户信息到Firestore
+    public void saveUserData(String userId, String username, String email) {
+        Map<String, Object> user = new HashMap<>();
+        user.put("username", username);
+        user.put("email", email);
+        user.put("lastSync", new Date());
+
+        db.collection(USERS_COLLECTION).document(userId)
+                .set(user)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "User data saved successfully");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Error saving user data", e);
+                    }
+                });
+    }
+
+    // 保存单个Schedule到Firestore
+    public void saveSchedule(String userId, Schedule schedule) {
+        // 使用Schedule的ID作为文档ID
+        String documentId = userId + "_" + schedule.getId();
+        Map<String, Object> scheduleMap = scheduleToMap(schedule);
+        scheduleMap.put("userId", userId); // 添加用户ID以便查询
+
+        db.collection(SCHEDULES_COLLECTION).document(documentId)
+                .set(scheduleMap)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "Schedule saved successfully");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Error saving schedule", e);
+                    }
+                });
+    }
+
+    // 批量保存Schedule列表到Firestore
+    public void saveSchedules(final String userId, List<Schedule> schedules) {
+        for (Schedule schedule : schedules) {
+            saveSchedule(userId, schedule);
+        }
+    }
+
+    // 从Firestore获取用户的所有Schedule
+    public void getSchedulesForUser(String userId, final FirestoreCallback callback) {
+        db.collection(SCHEDULES_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            List<Schedule> schedules = new ArrayList<>();
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                Schedule schedule = documentToSchedule(document);
+                                if (schedule != null) {
+                                    schedules.add(schedule);
+                                }
+                            }
+                            callback.onSuccess(schedules);
+                        } else {
+                            Log.e(TAG, "Error getting schedules", task.getException());
+                            callback.onFailure(task.getException());
+                        }
+                    }
+                });
+    }
+
+    // 删除Firestore中的Schedule
+    public void deleteSchedule(String userId, long scheduleId) {
+        String documentId = userId + "_" + scheduleId;
+        db.collection(SCHEDULES_COLLECTION).document(documentId)
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "Schedule deleted successfully");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Error deleting schedule", e);
+                    }
+                });
+    }
+}
+```
+
+#### model / Schedule.java
 
 ```java
 package com.example.planwise.data.model;
@@ -345,6 +861,8 @@ public class Schedule {
 }
 ```
 
+#### model / User.java
+
 ```java
 package com.example.planwise.data.model;
 
@@ -409,19 +927,19 @@ public class User {
 }
 ```
 
+#### repository / ScheduleRepository.java
+
 ```java
 package com.example.planwise.data.repository;
 
-
 import android.app.Application;
-import android.os.AsyncTask;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
-//import com.example.planwise.data.ApiClient;
-//import com.example.planwise.data.api.ApiService;
 import com.example.planwise.data.db.AppDatabase;
 import com.example.planwise.data.db.ScheduleDao;
+import com.example.planwise.data.firebase.FirestoreHelper;
 import com.example.planwise.data.model.Schedule;
 
 import java.util.Date;
@@ -430,8 +948,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ScheduleRepository {
+    private static final String TAG = "ScheduleRepository";
     private ScheduleDao scheduleDao;
-//    private ApiService apiService; todo
+    private FirestoreHelper firestoreHelper;
     private ExecutorService executorService;
     private LiveData<List<Schedule>> allSchedules;
     private LiveData<List<Schedule>> incompleteSchedules;
@@ -441,7 +960,7 @@ public class ScheduleRepository {
     public ScheduleRepository(Application application) {
         AppDatabase database = AppDatabase.getInstance(application);
         scheduleDao = database.scheduleDao();
-//        apiService = ApiClient.getApiService(); TODO
+        firestoreHelper = FirestoreHelper.getInstance();
         executorService = Executors.newFixedThreadPool(4);
 
         allSchedules = scheduleDao.getAllSchedules();
@@ -504,44 +1023,118 @@ public class ScheduleRepository {
         return allCategories;
     }
 
-    // Cloud sync operations
-    public void syncWithCloud(String userId) {
+    // 将本地数据上传至云端
+    public void uploadToCloud(String userId) {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    // Step 1: Fetch local unsynced schedules
-                    Date lastSyncTime = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // Last 24 hours
-                    List<Schedule> unSyncedSchedules = scheduleDao.getUnSyncedSchedules(lastSyncTime);
+                    Log.d(TAG, "开始上传本地数据到云端");
+                    // 获取所有本地日程
+                    List<Schedule> localSchedules = scheduleDao.getAllSchedules().getValue();
+                    if (localSchedules != null && !localSchedules.isEmpty()) {
+                        // 上传到Firestore
+                        firestoreHelper.saveSchedules(userId, localSchedules);
 
-                    // Step 2: Upload unsynced schedules to server
-                    // apiService.uploadSchedules(userId, unSyncedSchedules);
-
-                    // Step 3: Fetch latest schedules from server
-                    // List<Schedule> cloudSchedules = apiService.getSchedules(userId).execute().body();
-
-                    // Step 4: Update local database with cloud data
-                    // handleCloudSchedules(cloudSchedules);
-
-                    // Mark all as synced
-                    for (Schedule schedule : unSyncedSchedules) {
-                        schedule.setLastSynced(new Date());
-                        scheduleDao.updateSchedule(schedule);
+                        // 更新每个日程的同步时间
+                        Date syncTime = new Date();
+                        for (Schedule schedule : localSchedules) {
+                            schedule.setLastSynced(syncTime);
+                            scheduleDao.updateSchedule(schedule);
+                        }
+                        Log.d(TAG, "成功上传了 " + localSchedules.size() + " 条日程");
+                    } else {
+                        Log.d(TAG, "没有本地数据需要上传");
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    // Handle sync errors
+                    Log.e(TAG, "上传数据到云端时出错", e);
                 }
             }
         });
     }
 
-    // This would handle merging remote and local data
-    private void handleCloudSchedules(List<Schedule> cloudSchedules) {
-        // Implementation would merge data based on timestamps, priorities, etc.
+    // 从云端下载数据到本地
+    public void downloadFromCloud(String userId) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "开始从云端下载数据");
+                firestoreHelper.getSchedulesForUser(userId, new FirestoreHelper.FirestoreCallback() {
+                    @Override
+                    public void onSuccess(List<Schedule> cloudSchedules) {
+                        if (cloudSchedules != null && !cloudSchedules.isEmpty()) {
+                            Log.d(TAG, "从云端获取了 " + cloudSchedules.size() + " 条日程");
+                            // 将云端数据保存到本地数据库
+                            for (Schedule cloudSchedule : cloudSchedules) {
+                                // 设置同步时间
+                                cloudSchedule.setLastSynced(new Date());
+
+                                // 插入或更新本地数据库
+                                try {
+                                    Schedule localSchedule = scheduleDao.getScheduleById(cloudSchedule.getId()).getValue();
+                                    if (localSchedule != null) {
+                                        // 如果本地已存在，则更新
+                                        scheduleDao.updateSchedule(cloudSchedule);
+                                    } else {
+                                        // 如果本地不存在，则插入
+                                        scheduleDao.insertSchedule(cloudSchedule);
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "保存云端日程到本地时出错", e);
+                                }
+                            }
+                            Log.d(TAG, "云端数据同步到本地完成");
+                        } else {
+                            Log.d(TAG, "云端没有数据需要下载");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e(TAG, "从云端下载数据时出错", e);
+                    }
+                });
+            }
+        });
+    }
+
+    // 双向同步
+    public void syncWithCloud(String userId) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Log.d(TAG, "开始双向同步");
+                    // 步骤1：获取所有未同步的本地数据
+                    Date lastSyncTime = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // 最近24小时
+                    List<Schedule> unSyncedSchedules = scheduleDao.getUnSyncedSchedules(lastSyncTime);
+
+                    // 步骤2：上传未同步的数据到云端
+                    if (unSyncedSchedules != null && !unSyncedSchedules.isEmpty()) {
+                        Log.d(TAG, "上传 " + unSyncedSchedules.size() + " 条未同步的日程到云端");
+                        firestoreHelper.saveSchedules(userId, unSyncedSchedules);
+
+                        // 更新同步时间
+                        Date syncTime = new Date();
+                        for (Schedule schedule : unSyncedSchedules) {
+                            schedule.setLastSynced(syncTime);
+                            scheduleDao.updateSchedule(schedule);
+                        }
+                    }
+
+                    // 步骤3：从云端下载数据
+                    downloadFromCloud(userId);
+
+                } catch (Exception e) {
+                    Log.e(TAG, "双向同步时出错", e);
+                }
+            }
+        });
     }
 }
 ```
+
+#### repository/UserRepository.java
 
 ```java
 package com.example.planwise.data.repository;
@@ -549,27 +1142,80 @@ package com.example.planwise.data.repository;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.planwise.data.firebase.FirebaseAuthHelper;
+import com.example.planwise.data.firebase.FirestoreHelper;
 import com.example.planwise.data.model.User;
+import com.google.firebase.auth.FirebaseUser;
 
 public class UserRepository {
+    private static final String TAG = "UserRepository";
     private SharedPreferences prefs;
     private MutableLiveData<User> currentUser = new MutableLiveData<>();
     private MutableLiveData<Boolean> isLoggedIn = new MutableLiveData<>();
+    private FirebaseAuthHelper authHelper;
+    private FirestoreHelper firestoreHelper;
 
     public UserRepository(Application application) {
         prefs = PreferenceManager.getDefaultSharedPreferences(application);
-        isLoggedIn.setValue(isUserLoggedIn());
-        if (isUserLoggedIn()) {
-            loadUserFromPrefs();
+        authHelper = FirebaseAuthHelper.getInstance();
+        firestoreHelper = FirestoreHelper.getInstance();
+
+        // 设置Firebase认证回调
+        authHelper.setAuthCallback(new FirebaseAuthHelper.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser firebaseUser) {
+                // 从Firebase用户创建应用用户
+                User user = new User(
+                        firebaseUser.getUid(),
+                        firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User",
+                        firebaseUser.getEmail()
+                );
+
+                // 保存到SharedPreferences
+                saveUserToPrefs(user);
+
+                // 更新LiveData
+                currentUser.setValue(user);
+                isLoggedIn.setValue(true);
+
+                // 保存用户数据到Firestore
+                firestoreHelper.saveUserData(user.getUserId(), user.getUsername(), user.getEmail());
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Authentication failed", e);
+                isLoggedIn.setValue(false);
+            }
+        });
+
+        // 检查是否已经登录
+        FirebaseUser firebaseUser = authHelper.getCurrentUser();
+        if (firebaseUser != null) {
+            User user = new User(
+                    firebaseUser.getUid(),
+                    firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User",
+                    firebaseUser.getEmail()
+            );
+            currentUser.setValue(user);
+            isLoggedIn.setValue(true);
+        } else {
+            isLoggedIn.setValue(false);
+            loadUserFromPrefs(); // 尝试从本地加载
         }
     }
 
-    private boolean isUserLoggedIn() {
-        return prefs.contains("user_id");
+    private void saveUserToPrefs(User user) {
+        prefs.edit()
+                .putString("user_id", user.getUserId())
+                .putString("username", user.getUsername())
+                .putString("email", user.getEmail())
+                .apply();
     }
 
     private void loadUserFromPrefs() {
@@ -587,21 +1233,27 @@ public class UserRepository {
         }
     }
 
-    public void login(String userId, String username, String email) {
-        User user = new User(userId, username, email);
+    public void login(String email, String username) {
+        // 简单起见，使用邮箱作为密码（实际应用应使用真实密码机制）
+        String password = email;
 
-        // Save to preferences
-        prefs.edit()
-                .putString("user_id", userId)
-                .putString("username", username)
-                .putString("email", email)
-                .apply();
+        // 先尝试登录
+        authHelper.signInWithEmailAndPassword(email, password);
+    }
 
-        currentUser.setValue(user);
-        isLoggedIn.setValue(true);
+    public void registerAndLogin(String email, String username) {
+        // 简单起见，使用邮箱作为密码
+        String password = email;
+
+        // 注册新用户
+        authHelper.createUserWithEmailAndPassword(email, password, username);
     }
 
     public void logout() {
+        // 登出Firebase
+        authHelper.signOut();
+
+        // 清除SharedPreferences
         prefs.edit()
                 .remove("user_id")
                 .remove("username")
@@ -609,6 +1261,7 @@ public class UserRepository {
                 .remove("photo_url")
                 .apply();
 
+        // 更新LiveData
         currentUser.setValue(null);
         isLoggedIn.setValue(false);
     }
@@ -634,6 +1287,8 @@ public class UserRepository {
     }
 }
 ```
+
+#### activity/ AddScheduleActivity.java
 
 ```java
 package com.example.planwise.ui.activity;
@@ -816,11 +1471,15 @@ public class AddScheduleActivity extends AppCompatActivity {
 }
 ```
 
+#### activity/MainActivity.java
+
 ```java
 package com.example.planwise.ui.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -834,8 +1493,8 @@ import com.example.planwise.ui.viewmodel.UserViewModel;
 
 public class MainActivity extends AppCompatActivity {
 
-//    private ScheduleViewModel scheduleViewModel;
-//    private UserViewModel userViewModel;
+    private ScheduleViewModel scheduleViewModel;
+    private UserViewModel userViewModel;
     private NavController navController;
 
     @Override
@@ -843,9 +1502,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//         Setup ViewModels
-//        scheduleViewModel = new ViewModelProvider(this).get(ScheduleViewModel.class);
-//        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        // Setup ViewModels
+        scheduleViewModel = new ViewModelProvider(this).get(ScheduleViewModel.class);
+        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
 
         // Setup navigation
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -855,14 +1514,24 @@ public class MainActivity extends AppCompatActivity {
 
         // Connect BottomNavigationView with NavController
         NavigationUI.setupWithNavController(bottomNavigationView, navController);
+    }
 
-        // Observe login state
-//        userViewModel.getIsLoggedIn().observe(this, isLoggedIn -> {
-//            // Optional: Handle login/logout state changes
-//        });
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // 将登录结果转发给当前显示的Fragment
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+        if (navHostFragment != null && navHostFragment.getChildFragmentManager().getFragments().size() > 0) {
+            navHostFragment.getChildFragmentManager().getFragments().get(0)
+                    .onActivityResult(requestCode, resultCode, data);
+        }
     }
 }
 ```
+
+#### activity/ScheduleDetailActivity.java
 
 ```java
 package com.example.planwise.ui.activity;
@@ -1044,6 +1713,8 @@ public class ScheduleDetailActivity extends AppCompatActivity {
 }
 ```
 
+####  adapter/ ScheduleAdapter.java
+
 ```java
 package com.example.planwise.ui.adapter;
 
@@ -1158,6 +1829,8 @@ public class ScheduleAdapter extends ListAdapter<Schedule, ScheduleAdapter.Sched
 }
 ```
 
+####  fragment/CalendarFragment.java
+
 ```java
 package com.example.planwise.ui.fragment;
 
@@ -1257,15 +1930,19 @@ public class CalendarFragment extends Fragment implements ScheduleAdapter.OnSche
 }
 ```
 
+#### fragment/ProfileFragment.java
+
 ```java
 package com.example.planwise.ui.fragment;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -1320,30 +1997,27 @@ public class ProfileFragment extends Fragment {
 
         // Setup click listeners
         buttonLogin.setOnClickListener(v -> {
-            // In a real app, this would launch a login screen
-            // For simplicity, we'll just do a mock login
-            userViewModel.login("user123", "Demo User", "user@example.com");
-            Toast.makeText(getContext(), "Logged in as Demo User", Toast.LENGTH_SHORT).show();
+            showLoginDialog();
         });
 
         buttonLogout.setOnClickListener(v -> {
             userViewModel.logout();
-            Toast.makeText(getContext(), "Logged out", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "已退出登录", Toast.LENGTH_SHORT).show();
         });
 
         buttonSyncNow.setOnClickListener(v -> {
             User currentUser = userViewModel.getCurrentUser().getValue();
             if (currentUser != null && currentUser.isSyncEnabled()) {
-                scheduleViewModel.syncWithCloud(currentUser.getUserId());
-                Toast.makeText(getContext(), "Syncing data...", Toast.LENGTH_SHORT).show();
+                showSyncOptionsDialog(currentUser.getUserId());
             } else {
-                Toast.makeText(getContext(), "Sync is disabled", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "同步功能已禁用", Toast.LENGTH_SHORT).show();
             }
         });
 
         switchSync.setOnCheckedChangeListener((buttonView, isChecked) -> {
             userViewModel.updateSyncPreference(isChecked);
-            Toast.makeText(getContext(), isChecked ? "Sync enabled" : "Sync disabled", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), isChecked ? "同步已启用" : "同步已禁用", Toast.LENGTH_SHORT).show();
+            buttonSyncNow.setEnabled(isChecked);
         });
     }
 
@@ -1355,7 +2029,7 @@ public class ProfileFragment extends Fragment {
             switchSync.setEnabled(true);
             buttonSyncNow.setEnabled(user.isSyncEnabled());
         } else {
-            textViewUsername.setText("Not logged in");
+            textViewUsername.setText("未登录");
             textViewEmail.setText("");
             switchSync.setChecked(false);
             switchSync.setEnabled(false);
@@ -1372,8 +2046,69 @@ public class ProfileFragment extends Fragment {
             buttonLogout.setVisibility(View.GONE);
         }
     }
+
+    private void showLoginDialog() {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_login, null);
+
+        final EditText editTextUsername = dialogView.findViewById(R.id.edit_text_username);
+        final EditText editTextEmail = dialogView.findViewById(R.id.edit_text_email);
+
+        new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .setPositiveButton("登录/注册", (dialog, which) -> {
+                    String username = editTextUsername.getText().toString().trim();
+                    String email = editTextEmail.getText().toString().trim();
+
+                    if (TextUtils.isEmpty(username) || TextUtils.isEmpty(email)) {
+                        Toast.makeText(getContext(), "用户名和邮箱不能为空", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // 尝试登录，如果失败会自动注册
+                    userViewModel.login(email, username);
+                    Toast.makeText(getContext(), "正在登录...", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void showSyncOptionsDialog(String userId) {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_sync_options, null);
+
+        Button buttonUploadToCloud = dialogView.findViewById(R.id.button_upload_to_cloud);
+        Button buttonDownloadFromCloud = dialogView.findViewById(R.id.button_download_from_cloud);
+        Button buttonBothWaySync = dialogView.findViewById(R.id.button_both_way_sync);
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        buttonUploadToCloud.setOnClickListener(v -> {
+            scheduleViewModel.uploadToCloud(userId);
+            Toast.makeText(getContext(), "正在上传本地数据到云端...", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        buttonDownloadFromCloud.setOnClickListener(v -> {
+            scheduleViewModel.downloadFromCloud(userId);
+            Toast.makeText(getContext(), "正在从云端下载数据...", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        buttonBothWaySync.setOnClickListener(v -> {
+            scheduleViewModel.syncWithCloud(userId);
+            Toast.makeText(getContext(), "正在进行双向同步...", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
 }
 ```
+
+#### fragment/TodayTodoFragment.java
 
 ```java
 package com.example.planwise.ui.fragment;
@@ -1858,6 +2593,8 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
 
 ```
 
+#### viewmodel/ScheduleViewModel.java
+
 ```java
 package com.example.planwise.ui.viewmodel;
 
@@ -2013,22 +2750,35 @@ public class ScheduleViewModel extends AndroidViewModel {
         return repository.getSchedulesBetweenDates(startOfDay, endOfDay);
     }
 
-    // Cloud sync
+
+    // 上传本地数据到云端
+    public void uploadToCloud(String userId) {
+        repository.uploadToCloud(userId);
+    }
+
+    // 从云端下载数据到本地
+    public void downloadFromCloud(String userId) {
+        repository.downloadFromCloud(userId);
+    }
+
+    // 双向同步
+
     public void syncWithCloud(String userId) {
         repository.syncWithCloud(userId);
     }
-
 }
 ```
 
+#### viewmodel/UserViewModel.java
+
 ```java
 package com.example.planwise.ui.viewmodel;
-
 
 import android.app.Application;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import com.example.planwise.data.model.User;
 import com.example.planwise.data.repository.UserRepository;
@@ -2037,6 +2787,7 @@ public class UserViewModel extends AndroidViewModel {
     private UserRepository repository;
     private LiveData<User> currentUser;
     private LiveData<Boolean> isLoggedIn;
+    private MutableLiveData<Boolean> isSyncing = new MutableLiveData<>(false);
 
     public UserViewModel(Application application) {
         super(application);
@@ -2045,8 +2796,12 @@ public class UserViewModel extends AndroidViewModel {
         isLoggedIn = repository.getIsLoggedIn();
     }
 
-    public void login(String userId, String username, String email) {
-        repository.login(userId, username, email);
+    public void login(String email, String username) {
+        repository.login(email, username);
+    }
+
+    public void registerAndLogin(String email, String username) {
+        repository.registerAndLogin(email, username);
     }
 
     public void logout() {
@@ -2057,12 +2812,20 @@ public class UserViewModel extends AndroidViewModel {
         repository.updateSyncPreference(enabled);
     }
 
+    public void setSyncing(boolean syncing) {
+        isSyncing.setValue(syncing);
+    }
+
     public LiveData<User> getCurrentUser() {
         return currentUser;
     }
 
     public LiveData<Boolean> getIsLoggedIn() {
         return isLoggedIn;
+    }
+
+    public LiveData<Boolean> getIsSyncing() {
+        return isSyncing;
     }
 }
 ```
@@ -2390,6 +3153,96 @@ public class UserViewModel extends AndroidViewModel {
 </ScrollView>
 ```
 
+#### dialog_login.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="登录或注册"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+        android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_text_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="用户名"
+            android:inputType="text"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_text_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="邮箱"
+            android:inputType="textEmailAddress"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>
+```
+
+#### dialog_sync_options.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="同步选项"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/button_upload_to_cloud"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="将本地数据同步到云端"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/button_download_from_cloud"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="将云端数据同步到本地"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/button_both_way_sync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="双向同步"/>
+
+</LinearLayout>
+```
+
 #### dialog_time_filter.xml
 
 ```xml
@@ -2609,7 +3462,7 @@ public class UserViewModel extends AndroidViewModel {
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="设置"
+                android:text="云同步设置"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
 
             <LinearLayout
@@ -2636,7 +3489,16 @@ public class UserViewModel extends AndroidViewModel {
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="立即同步" />
+                android:text="选择同步方式"
+                android:enabled="false"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="登录后可使用云同步功能，将您的待办事项同步到云端或从云端恢复"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -2644,7 +3506,7 @@ public class UserViewModel extends AndroidViewModel {
         android:id="@+id/button_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="登录" />
+        android:text="登录/注册" />
 
     <Button
         android:id="@+id/button_logout"
