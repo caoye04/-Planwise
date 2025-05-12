@@ -1,10 +1,12 @@
 package com.example.planwise.ui.activity;
 
-
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,6 +35,8 @@ public class ScheduleDetailActivity extends AppCompatActivity {
     private TextView textViewCategory;
     private CheckBox checkBoxCompleted;
     private TextView textViewAiSuggestion;
+    private Button buttonGetAiSuggestion;
+    private ProgressBar progressAiSuggestion;
 
     private SimpleDateFormat dateTimeFormat = new SimpleDateFormat("EEEE, MMM dd, yyyy HH:mm", Locale.getDefault());
 
@@ -43,7 +47,7 @@ public class ScheduleDetailActivity extends AppCompatActivity {
 
         // Enable back button in action bar
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Schedule Details");
+        getSupportActionBar().setTitle("日程详情");
 
         // Initialize views
         textViewTitle = findViewById(R.id.text_view_title);
@@ -53,6 +57,8 @@ public class ScheduleDetailActivity extends AppCompatActivity {
         textViewCategory = findViewById(R.id.text_view_category);
         checkBoxCompleted = findViewById(R.id.checkbox_completed);
         textViewAiSuggestion = findViewById(R.id.text_view_ai_suggestion);
+        buttonGetAiSuggestion = findViewById(R.id.button_get_ai_suggestion);
+        progressAiSuggestion = findViewById(R.id.progress_ai_suggestion);
 
         // Setup ViewModel
         viewModel = new ViewModelProvider(this).get(ScheduleViewModel.class);
@@ -60,7 +66,7 @@ public class ScheduleDetailActivity extends AppCompatActivity {
         // Get schedule ID from intent
         long scheduleId = getIntent().getLongExtra("schedule_id", -1);
         if (scheduleId == -1) {
-            Toast.makeText(this, "Error: Schedule not found", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "错误：未找到日程", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -70,9 +76,8 @@ public class ScheduleDetailActivity extends AppCompatActivity {
             if (schedule != null) {
                 currentSchedule = schedule;
                 displayScheduleDetails(schedule);
-                generateAiSuggestion(schedule);
             } else {
-                Toast.makeText(this, "Schedule not found", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "未找到日程", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
@@ -81,6 +86,34 @@ public class ScheduleDetailActivity extends AppCompatActivity {
         checkBoxCompleted.setOnClickListener(v -> {
             if (currentSchedule != null) {
                 viewModel.toggleScheduleCompleted(currentSchedule);
+            }
+        });
+
+        // Setup AI suggestion button
+        buttonGetAiSuggestion.setOnClickListener(v -> {
+            if (currentSchedule != null) {
+                // 显示加载提示
+                textViewAiSuggestion.setText("正在获取 AI 小助手的建议，请稍等...");
+                // 调用 AI 建议方法
+                viewModel.getAiSuggestion(currentSchedule);
+            }
+        });
+
+        // Observe AI suggestion loading state
+        viewModel.getIsLoadingAiSuggestion().observe(this, isLoading -> {
+            progressAiSuggestion.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            buttonGetAiSuggestion.setEnabled(!isLoading);
+            if (isLoading) {
+                buttonGetAiSuggestion.setText("正在获取建议...");
+            } else {
+                buttonGetAiSuggestion.setText("问问PlanWiseAI的建议吧！");
+            }
+        });
+
+        // Observe AI suggestion
+        viewModel.getAiSuggestion().observe(this, suggestion -> {
+            if (suggestion != null && !suggestion.isEmpty()) {
+                textViewAiSuggestion.setText(suggestion);
             }
         });
     }
@@ -92,48 +125,25 @@ public class ScheduleDetailActivity extends AppCompatActivity {
         if (schedule.getDescription() != null && !schedule.getDescription().isEmpty()) {
             textViewDescription.setText(schedule.getDescription());
         } else {
-            textViewDescription.setText("No description");
+            textViewDescription.setText("暂无描述");
         }
 
         // Date and time
         if (schedule.getScheduledDate() != null) {
             textViewDateTime.setText(dateTimeFormat.format(schedule.getScheduledDate()));
         } else {
-            textViewDateTime.setText("No date specified");
+            textViewDateTime.setText("未指定日期");
         }
 
         // Location (show "No location" if empty)
         if (schedule.getLocation() != null && !schedule.getLocation().isEmpty()) {
             textViewLocation.setText(schedule.getLocation());
         } else {
-            textViewLocation.setText("No location");
+            textViewLocation.setText("未指定地点");
         }
 
         textViewCategory.setText(schedule.getCategory());
         checkBoxCompleted.setChecked(schedule.isCompleted());
-    }
-
-    private void generateAiSuggestion(Schedule schedule) {
-        // This would typically call an AI API or use a local model
-        // For now, we'll use some simple heuristics
-
-        String suggestion;
-        String title = schedule.getTitle().toLowerCase();
-        String category = schedule.getCategory();
-
-        if (title.contains("meeting") || title.contains("appointment")) {
-            suggestion = "Prepare necessary documents 15 minutes before your meeting.";
-        } else if (category.equals("Study")) {
-            suggestion = "Consider using the Pomodoro technique: 25 minutes of focus followed by a 5-minute break.";
-        } else if (category.equals("Work")) {
-            suggestion = "Try to complete this task during your peak productivity hours.";
-        } else if (title.contains("exercise") || title.contains("workout")) {
-            suggestion = "Stay hydrated and prepare your workout clothes in advance.";
-        } else {
-            suggestion = "Break this task into smaller steps for better productivity.";
-        }
-
-        textViewAiSuggestion.setText(suggestion);
     }
 
     @Override
@@ -151,7 +161,7 @@ public class ScheduleDetailActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_edit) {
             // Intent to edit schedule (not implemented in this code sample)
-            Toast.makeText(this, "Edit functionality", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "编辑功能", Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_delete) {
             confirmDeleteSchedule();
@@ -163,15 +173,15 @@ public class ScheduleDetailActivity extends AppCompatActivity {
 
     private void confirmDeleteSchedule() {
         new AlertDialog.Builder(this)
-                .setTitle("Delete Schedule")
-                .setMessage("Are you sure you want to delete this schedule?")
-                .setPositiveButton("Delete", (dialog, which) -> {
+                .setTitle("删除日程")
+                .setMessage("确定要删除这个日程吗？")
+                .setPositiveButton("删除", (dialog, which) -> {
                     if (currentSchedule != null) {
                         viewModel.deleteSchedule(currentSchedule);
                         finish();
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("取消", null)
                 .show();
     }
 }

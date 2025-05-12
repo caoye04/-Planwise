@@ -37,6 +37,10 @@ public class ScheduleViewModel extends AndroidViewModel {
     // 同步状态
     private LiveData<Boolean> isSyncing;
 
+    // AI建议状态
+    private MutableLiveData<Boolean> isLoadingAiSuggestion = new MutableLiveData<>(false);
+    private MutableLiveData<String> aiSuggestion = new MutableLiveData<>();
+
     public ScheduleViewModel(Application application) {
         super(application);
         repository = new ScheduleRepository(application);
@@ -169,5 +173,32 @@ public class ScheduleViewModel extends AndroidViewModel {
     // 获取同步状态
     public LiveData<Boolean> getIsSyncing() {
         return isSyncing;
+    }
+
+    // 获取AI建议
+    public void getAiSuggestion(Schedule schedule) {
+        isLoadingAiSuggestion.setValue(true);
+
+        repository.getAiSuggestion(schedule, new ScheduleRepository.OnAiSuggestionListener() {
+            @Override
+            public void onAiSuggestionReceived(boolean success, String suggestion) {
+                isLoadingAiSuggestion.postValue(false);
+                if (success) {
+                    aiSuggestion.postValue(suggestion);
+                } else {
+                    aiSuggestion.postValue("获取建议失败，请稍后再试。");
+                }
+            }
+        });
+    }
+
+    // 获取AI建议加载状态
+    public LiveData<Boolean> getIsLoadingAiSuggestion() {
+        return isLoadingAiSuggestion;
+    }
+
+    // 获取AI建议内容
+    public LiveData<String> getAiSuggestion() {
+        return aiSuggestion;
     }
 }

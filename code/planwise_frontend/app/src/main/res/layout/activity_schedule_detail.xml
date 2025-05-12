@@ -116,6 +116,7 @@
             tools:text="需要完成Android大作业的初步设计，包括UI设计和数据结构设计" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_ai_suggestion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -143,7 +144,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:minHeight="80dp"
                     tools:text="建议提前准备相关资料，并分配足够的时间完成这项任务。可以将任务分解为UI设计、数据结构设计和文档编写三个部分，逐步完成。" />
+
+                <Button
+                    android:id="@+id/button_get_ai_suggestion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="问问PlanWiseAI的建议吧！" />
+
+                <ProgressBar
+                    android:id="@+id/progress_ai_suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

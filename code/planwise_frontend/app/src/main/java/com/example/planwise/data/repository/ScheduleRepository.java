@@ -14,8 +14,12 @@ import com.example.planwise.data.db.ScheduleDao;
 import com.example.planwise.data.model.Schedule;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -179,6 +183,46 @@ public class ScheduleRepository {
         });
     }
 
+    // 获取AI建议
+    public void getAiSuggestion(Schedule schedule, OnAiSuggestionListener listener) {
+        executorService.execute(() -> {
+            try {
+                // 构建请求参数
+                Map<String, Object> params = new HashMap<>();
+                params.put("title", schedule.getTitle());
+                params.put("description", schedule.getDescription());
+
+                // 格式化日期时间
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                params.put("scheduled_date", dateFormat.format(schedule.getScheduledDate()));
+
+                params.put("location", schedule.getLocation());
+                params.put("category", schedule.getCategory());
+                params.put("is_completed", schedule.isCompleted());
+
+                // 发送请求
+                Call<Map<String, String>> call = apiService.getAiSuggestion(params);
+                Response<Map<String, String>> response = call.execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String suggestion = response.body().get("suggestion");
+                    if (listener != null) {
+                        listener.onAiSuggestionReceived(true, suggestion);
+                    }
+                } else {
+                    if (listener != null) {
+                        listener.onAiSuggestionReceived(false, "获取AI建议失败: " + response.message());
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "获取AI建议失败", e);
+                if (listener != null) {
+                    listener.onAiSuggestionReceived(false, "获取AI建议失败: " + e.getMessage());
+                }
+            }
+        });
+    }
+
     // 获取所有日程（同步方法）
     private List<Schedule> getAllSchedulesSync() {
         // 这个方法需要内部使用，直接同步获取所有日程
@@ -195,5 +239,10 @@ public class ScheduleRepository {
     // 同步完成监听器接口
     public interface OnSyncCompleteListener {
         void onSyncComplete(boolean success, String message);
+    }
+
+    // AI建议完成监听器接口
+    public interface OnAiSuggestionListener {
+        void onAiSuggestionReceived(boolean success, String suggestion);
     }
 }
