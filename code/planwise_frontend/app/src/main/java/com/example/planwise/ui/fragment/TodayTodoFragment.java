@@ -3,6 +3,7 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -46,6 +47,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
 
     private ScheduleViewModel viewModel;
     private ScheduleAdapter adapter;
+    private TextView textViewFilterHint; // 添加筛选提示视图引用
 
     private List<Schedule> allSchedules = new ArrayList<>();
     private int currentFilter = FILTER_ALL;
@@ -84,6 +86,9 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         adapter = new ScheduleAdapter(this);
         recyclerView.setAdapter(adapter);
 
+        // 初始化筛选提示视图
+        textViewFilterHint = view.findViewById(R.id.text_view_filter_hint);
+
         // Setup filter chips
         ChipGroup chipGroupFilter = view.findViewById(R.id.chip_group_filter);
         Chip chipAll = view.findViewById(R.id.chip_filter_all);
@@ -93,10 +98,13 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         chipGroupFilter.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.chip_filter_all) {
                 currentFilter = FILTER_ALL;
+                updateFilterHint(null); // 清除筛选提示
             } else if (checkedId == R.id.chip_filter_incomplete) {
                 currentFilter = FILTER_INCOMPLETE;
+                updateFilterHint("当前筛选：未完成"); // 更新筛选提示
             } else if (checkedId == R.id.chip_filter_completed) {
                 currentFilter = FILTER_COMPLETED;
+                updateFilterHint("当前筛选：已完成"); // 更新筛选提示
             }
 
             // Apply the filter to current data
@@ -145,6 +153,16 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
             Intent intent = new Intent(getActivity(), AddScheduleActivity.class);
             startActivity(intent);
         });
+    }
+
+    // 添加更新筛选提示的方法
+    private void updateFilterHint(String hintText) {
+        if (hintText == null || hintText.isEmpty()) {
+            textViewFilterHint.setVisibility(View.GONE);
+        } else {
+            textViewFilterHint.setText(hintText);
+            textViewFilterHint.setVisibility(View.VISIBLE);
+        }
     }
 
     private void applyFilter() {
@@ -350,6 +368,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         // 重置筛选芯片选择
         ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
         chipGroup.clearCheck();
+        updateFilterHint("当前筛选：今日待办"); // 更新筛选提示
         applyFilter();
         Toast.makeText(requireContext(), "已筛选今日待办", Toast.LENGTH_SHORT).show();
     }
@@ -360,6 +379,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         // 重置筛选芯片选择
         ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
         chipGroup.clearCheck();
+        updateFilterHint("当前筛选：近三天待办"); // 更新筛选提示
         applyFilter();
         Toast.makeText(requireContext(), "已筛选近三天待办", Toast.LENGTH_SHORT).show();
     }
@@ -370,6 +390,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         // 重置筛选芯片选择
         ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
         chipGroup.clearCheck();
+        updateFilterHint("当前筛选：本周待办"); // 更新筛选提示
         applyFilter();
         Toast.makeText(requireContext(), "已筛选本周待办", Toast.LENGTH_SHORT).show();
     }
@@ -479,6 +500,21 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
                     filterEndDate = endDate;
                     currentFilter = FILTER_TIME;
 
+                    // 构建自定义时间筛选的提示文本
+                    StringBuilder hintTextBuilder = new StringBuilder("当前筛选：");
+                    if (startDate != null && endDate != null) {
+                        hintTextBuilder.append(dateFormat.format(startDate))
+                                .append(" 至 ")
+                                .append(dateFormat.format(endDate));
+                    } else if (startDate != null) {
+                        hintTextBuilder.append(dateFormat.format(startDate))
+                                .append(" 之后");
+                    } else if (endDate != null) {
+                        hintTextBuilder.append(dateFormat.format(endDate))
+                                .append(" 之前");
+                    }
+                    updateFilterHint(hintTextBuilder.toString()); // 更新筛选提示
+
                     // 重置筛选芯片选择
                     ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
                     chipGroup.clearCheck();
@@ -554,6 +590,9 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
                     filterTag = tagArray[which];
                     currentFilter = FILTER_TAG;
 
+                    // 更新筛选提示
+                    updateFilterHint("当前筛选：标签 - " + filterTag);
+
                     // Reset chips selection
                     ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
                     chipGroup.clearCheck();
@@ -574,6 +613,9 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
 
         // Reset to show all tasks
         currentFilter = FILTER_ALL;
+
+        // 清除筛选提示
+        updateFilterHint(null);
 
         // Select the "All" chip
         ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);

@@ -67,6 +67,20 @@
                 android:src="@drawable/ic_filter"
                 app:tint="?attr/colorPrimary" />
         </LinearLayout>
+
+        <!-- 添加筛选提示视图 -->
+        <TextView
+            android:id="@+id/text_view_filter_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="4dp"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:text="当前筛选：近三天待办"
+            tools:visibility="visible" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"

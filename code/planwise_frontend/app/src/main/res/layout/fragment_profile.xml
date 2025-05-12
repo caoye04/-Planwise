@@ -22,46 +22,74 @@
         app:cardCornerRadius="8dp"
         app:cardElevation="2dp">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:padding="16dp">
 
             <TextView
-                android:layout_width="match_parent"
+                android:id="@+id/profile_title"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="个人信息"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/image_view_avatar"/>
+
+            <!-- 用户头像 -->
+            <ImageView
+                android:id="@+id/image_view_avatar"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:contentDescription="用户头像"
+                android:scaleType="centerCrop"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:background="@drawable/circle_background"
+                />
 
             <TextView
+                android:id="@+id/username_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="用户名"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/profile_title" />
 
             <TextView
                 android:id="@+id/text_view_username"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/username_label"
                 tools:text="Planwiser" />
 
             <TextView
+                android:id="@+id/status_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="状态"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/text_view_username" />
 
             <TextView
                 android:id="@+id/text_view_email"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/status_label"
                 tools:text="用户默认" />
-        </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.card.MaterialCardView
@@ -110,7 +138,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="4dp"
-                    android:text="将本地数据同步到云" />
+                    android:text="本地数据同步到云" />
 
                 <Button
                     android:id="@+id/button_cloud_to_local"
@@ -118,7 +146,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="4dp"
-                    android:text="将云数据同步到本地" />
+                    android:text="云数据同步到本地" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

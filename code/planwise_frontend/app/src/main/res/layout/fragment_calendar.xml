@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -18,6 +19,19 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp" />
+
+    <!-- 添加日期任务状态指示条 -->
+    <TextView
+        android:id="@+id/text_view_date_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:paddingVertical="4dp"
+        android:textColor="?attr/colorPrimary"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="此日期有未完成的待办"
+        tools:visibility="visible" />
 
     <TextView
         android:layout_width="match_parent"

@@ -2,6 +2,7 @@ package com.example.planwise.ui.fragment;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -9,12 +10,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -28,6 +31,7 @@ public class ProfileFragment extends Fragment {
     private ScheduleViewModel scheduleViewModel;
     private TextView textViewUsername;
     private TextView textViewEmail;
+    private ImageView imageViewAvatar;
     private Button buttonLocalToCloud;
     private Button buttonCloudToLocal;
     private Button buttonSetServerIp;
@@ -49,6 +53,7 @@ public class ProfileFragment extends Fragment {
         // Initialize views
         textViewUsername = view.findViewById(R.id.text_view_username);
         textViewEmail = view.findViewById(R.id.text_view_email);
+        imageViewAvatar = view.findViewById(R.id.image_view_avatar);
         buttonLocalToCloud = view.findViewById(R.id.button_local_to_cloud);
         buttonCloudToLocal = view.findViewById(R.id.button_cloud_to_local);
         buttonSetServerIp = view.findViewById(R.id.button_set_server_ip);
@@ -57,6 +62,19 @@ public class ProfileFragment extends Fragment {
         // Set default user
         textViewUsername.setText("Planwiser");
         textViewEmail.setText("用户默认");
+
+        // 加载用户头像
+        try {
+            // 从资源中加载用户头像
+            Drawable userAvatar = ContextCompat.getDrawable(requireContext(),
+                    getResources().getIdentifier("user", "drawable", requireContext().getPackageName()));
+            if (userAvatar != null) {
+                imageViewAvatar.setImageDrawable(userAvatar);
+            }
+        } catch (Exception e) {
+            // 如果找不到图片资源，使用默认图标
+            imageViewAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
+        }
 
         // Setup click listeners for sync buttons
         buttonLocalToCloud.setOnClickListener(v -> syncLocalToCloud());
