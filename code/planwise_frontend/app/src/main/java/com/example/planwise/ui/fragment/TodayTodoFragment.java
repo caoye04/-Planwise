@@ -56,6 +56,10 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
     private static final int FILTER_COMPLETED = 2;
     private static final int FILTER_TIME = 3;
     private static final int FILTER_TAG = 4;
+    // 新增的快捷筛选类型
+    private static final int FILTER_TODAY = 5;
+    private static final int FILTER_THREE_DAYS = 6;
+    private static final int FILTER_THIS_WEEK = 7;
 
     private Date filterStartDate = null;
     private Date filterEndDate = null;
@@ -80,7 +84,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         adapter = new ScheduleAdapter(this);
         recyclerView.setAdapter(adapter);
 
-// Setup filter chips
+        // Setup filter chips
         ChipGroup chipGroupFilter = view.findViewById(R.id.chip_group_filter);
         Chip chipAll = view.findViewById(R.id.chip_filter_all);
         Chip chipIncomplete = view.findViewById(R.id.chip_filter_incomplete);
@@ -98,11 +102,13 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
             // Apply the filter to current data
             applyFilter();
         });
+
         // Setup advanced filter button
         ImageButton btnAdvancedFilter = view.findViewById(R.id.btn_advanced_filter);
         btnAdvancedFilter.setOnClickListener(v -> {
             showAdvancedFilterDialog();
         });
+
         // Observe today's schedules
         viewModel.getAllSchedules().observe(getViewLifecycleOwner(), schedules -> {
             allSchedules = schedules != null ? schedules : new ArrayList<>();
@@ -115,6 +121,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
                 addDefaultSchedules();
             }
         });
+
         // Setup swipe delete functionality
         ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -179,6 +186,18 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
                         shouldInclude = schedule.getCategory().equals(filterTag);
                     }
                     break;
+                case FILTER_TODAY:
+                    // 检查是否是今天的待办
+                    shouldInclude = isScheduleToday(schedule);
+                    break;
+                case FILTER_THREE_DAYS:
+                    // 检查是否是近三天的待办
+                    shouldInclude = isScheduleWithinDays(schedule, 3);
+                    break;
+                case FILTER_THIS_WEEK:
+                    // 检查是否是本周的待办
+                    shouldInclude = isScheduleThisWeek(schedule);
+                    break;
             }
 
             if (shouldInclude) {
@@ -187,6 +206,57 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         }
 
         adapter.submitList(filteredList);
+    }
+
+    // 检查日程是否是今天的
+    private boolean isScheduleToday(Schedule schedule) {
+        if (schedule.getScheduledDate() == null) return false;
+
+        Calendar scheduleCalendar = Calendar.getInstance();
+        scheduleCalendar.setTime(schedule.getScheduledDate());
+
+        Calendar todayCalendar = Calendar.getInstance();
+
+        return scheduleCalendar.get(Calendar.YEAR) == todayCalendar.get(Calendar.YEAR) &&
+                scheduleCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR);
+    }
+
+    // 检查日程是否在指定天数内
+    private boolean isScheduleWithinDays(Schedule schedule, int days) {
+        if (schedule.getScheduledDate() == null) return false;
+
+        // 获取当前时间
+        Calendar currentCalendar = Calendar.getInstance();
+        // 设置为今天的开始时间
+        currentCalendar.set(Calendar.HOUR_OF_DAY, 0);
+        currentCalendar.set(Calendar.MINUTE, 0);
+        currentCalendar.set(Calendar.SECOND, 0);
+        currentCalendar.set(Calendar.MILLISECOND, 0);
+
+        // 获取未来的截止时间
+        Calendar futureCalendar = Calendar.getInstance();
+        futureCalendar.add(Calendar.DAY_OF_YEAR, days);
+        futureCalendar.set(Calendar.HOUR_OF_DAY, 23);
+        futureCalendar.set(Calendar.MINUTE, 59);
+        futureCalendar.set(Calendar.SECOND, 59);
+        futureCalendar.set(Calendar.MILLISECOND, 999);
+
+        return !schedule.getScheduledDate().before(currentCalendar.getTime()) &&
+                !schedule.getScheduledDate().after(futureCalendar.getTime());
+    }
+
+    // 检查日程是否在本周内
+    private boolean isScheduleThisWeek(Schedule schedule) {
+        if (schedule.getScheduledDate() == null) return false;
+
+        Calendar scheduleCalendar = Calendar.getInstance();
+        scheduleCalendar.setTime(schedule.getScheduledDate());
+
+        Calendar currentCalendar = Calendar.getInstance();
+
+        // 检查是否是同一年的同一周
+        return scheduleCalendar.get(Calendar.YEAR) == currentCalendar.get(Calendar.YEAR) &&
+                scheduleCalendar.get(Calendar.WEEK_OF_YEAR) == currentCalendar.get(Calendar.WEEK_OF_YEAR);
     }
 
     @Override
@@ -240,23 +310,33 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         viewModel.insertSchedule(schedule2);
         viewModel.insertSchedule(schedule3);
     }
+
     /**
      * Shows dialog for advanced filtering options
      */
     private void showAdvancedFilterDialog() {
-        String[] options = {"按时间筛选", "按标签筛选", "清除筛选"};
+        String[] options = {"今日待办", "近三天待办", "本周待办", "按时间筛选", "按标签筛选", "清除筛选"};
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("选择筛选方式")
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
-                        case 0: // 按时间筛选
+                        case 0: // 今日待办
+                            applyTodayFilter();
+                            break;
+                        case 1: // 近三天待办
+                            applyThreeDaysFilter();
+                            break;
+                        case 2: // 本周待办
+                            applyThisWeekFilter();
+                            break;
+                        case 3: // 按时间筛选
                             showTimeFilterDialog();
                             break;
-                        case 1: // 按标签筛选
+                        case 4: // 按标签筛选
                             showTagFilterDialog();
                             break;
-                        case 2: // 清除筛选
+                        case 5: // 清除筛选
                             clearAdvancedFilters();
                             break;
                     }
@@ -264,9 +344,36 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
                 .show();
     }
 
-    /**
-     * Shows dialog for time-based filtering
-     */
+    // 应用今日待办筛选
+    private void applyTodayFilter() {
+        currentFilter = FILTER_TODAY;
+        // 重置筛选芯片选择
+        ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
+        chipGroup.clearCheck();
+        applyFilter();
+        Toast.makeText(requireContext(), "已筛选今日待办", Toast.LENGTH_SHORT).show();
+    }
+
+    // 应用近三天待办筛选
+    private void applyThreeDaysFilter() {
+        currentFilter = FILTER_THREE_DAYS;
+        // 重置筛选芯片选择
+        ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
+        chipGroup.clearCheck();
+        applyFilter();
+        Toast.makeText(requireContext(), "已筛选近三天待办", Toast.LENGTH_SHORT).show();
+    }
+
+    // 应用本周待办筛选
+    private void applyThisWeekFilter() {
+        currentFilter = FILTER_THIS_WEEK;
+        // 重置筛选芯片选择
+        ChipGroup chipGroup = requireView().findViewById(R.id.chip_group_filter);
+        chipGroup.clearCheck();
+        applyFilter();
+        Toast.makeText(requireContext(), "已筛选本周待办", Toast.LENGTH_SHORT).show();
+    }
+
     /**
      * Shows dialog for time-based filtering
      */
@@ -328,7 +435,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
             ).show();
         });
 
-// 设置时间选择器 - 结束时间
+        // 设置时间选择器 - 结束时间
         etEndTime.setOnClickListener(v -> {
             Calendar calendar = Calendar.getInstance();
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -401,6 +508,7 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
 
         timePickerDialog.show();
     }
+
     /**
      * Shows DatePickerDialog with the given listener
      */

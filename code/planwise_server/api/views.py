@@ -106,6 +106,7 @@ def get_ai_suggestion(request):
                 ai_suggestion = ai_suggestion.replace('#', '')
                 ai_suggestion = ai_suggestion.replace('```', '')
                 
+                print(prompt)
                 print(ai_suggestion)
                 return Response({"suggestion": ai_suggestion}, status=status.HTTP_200_OK)
                 

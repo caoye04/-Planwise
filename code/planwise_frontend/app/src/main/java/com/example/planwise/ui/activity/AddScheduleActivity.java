@@ -34,10 +34,14 @@ public class AddScheduleActivity extends AppCompatActivity {
     private EditText editTextLocation;
     private ChipGroup chipGroupCategory;
     private Button buttonSave;
+    private Button buttonAddTag;
 
     private Calendar selectedDateTime = Calendar.getInstance();
     private SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
     private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+
+    // 预设标签数组
+    private String[] defaultCategories = {"个人", "学习", "工作", "健康", "购物", "社交", "家庭", "休闲"};
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -61,6 +65,7 @@ public class AddScheduleActivity extends AppCompatActivity {
         editTextLocation = findViewById(R.id.edit_text_location);
         chipGroupCategory = findViewById(R.id.chip_group_category);
         buttonSave = findViewById(R.id.button_save);
+        buttonAddTag = findViewById(R.id.button_add_tag);
 
         // Initialize date and time
         updateDateText();
@@ -99,28 +104,55 @@ public class AddScheduleActivity extends AppCompatActivity {
             timePicker.show(getSupportFragmentManager(), "TIME_PICKER");
         });
 
-        // Populate categories
-        viewModel.getAllCategories().observe(this, categories -> {
-            chipGroupCategory.removeAllViews();
-
-            // Add default categories if empty
-            if (categories == null || categories.isEmpty()) {
-                addCategoryChip("Work");
-                addCategoryChip("Personal");
-                addCategoryChip("Study");
-                addCategoryChip("Shopping");
-            } else {
-                for (String category : categories) {
-                    addCategoryChip(category);
-                }
-            }
+        // 添加新标签按钮点击事件
+        buttonAddTag.setOnClickListener(v -> {
+            showAddTagDialog();
         });
+
+        // Populate categories
+        loadCategories();
 
         // Save button click listener
         buttonSave.setOnClickListener(v -> saveSchedule());
     }
 
+    private void loadCategories() {
+        chipGroupCategory.removeAllViews();
+
+        // 先加载预设标签
+        for (String category : defaultCategories) {
+            addCategoryChip(category);
+        }
+
+        // 然后观察数据库中的标签
+        viewModel.getAllCategories().observe(this, categories -> {
+            // 添加数据库中有的但预设标签中没有的标签
+            if (categories != null) {
+                for (String category : categories) {
+                    boolean exists = false;
+                    for (String defaultCategory : defaultCategories) {
+                        if (defaultCategory.equals(category)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        addCategoryChip(category);
+                    }
+                }
+            }
+        });
+    }
+
     private void addCategoryChip(String category) {
+        // 检查是否已经存在
+        for (int i = 0; i < chipGroupCategory.getChildCount(); i++) {
+            Chip existingChip = (Chip) chipGroupCategory.getChildAt(i);
+            if (existingChip.getText().toString().equals(category)) {
+                return; // 如果已存在，就不添加了
+            }
+        }
+
         Chip chip = new Chip(this);
         chip.setText(category);
         chip.setCheckable(true);
@@ -146,7 +178,7 @@ public class AddScheduleActivity extends AppCompatActivity {
         }
 
         // Get selected category
-        String category = "Other";
+        String category = "其他";
         int checkedChipId = chipGroupCategory.getCheckedChipId();
         if (checkedChipId != -1) {
             Chip selectedChip = findViewById(checkedChipId);
@@ -165,6 +197,37 @@ public class AddScheduleActivity extends AppCompatActivity {
 
         viewModel.insertSchedule(schedule);
         finish();
+    }
+
+    // 显示添加新标签的对话框
+    private void showAddTagDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("添加新标签");
+
+        // 设置输入框
+        final EditText input = new EditText(this);
+        input.setHint("请输入标签名称");
+        builder.setView(input);
+
+        // 设置按钮
+        builder.setPositiveButton("添加", (dialog, which) -> {
+            String newTag = input.getText().toString().trim();
+            if (!newTag.isEmpty()) {
+                // 添加新标签
+                addCategoryChip(newTag);
+                // 自动选中新标签
+                for (int i = 0; i < chipGroupCategory.getChildCount(); i++) {
+                    Chip chip = (Chip) chipGroupCategory.getChildAt(i);
+                    if (chip.getText().toString().equals(newTag)) {
+                        chip.setChecked(true);
+                        break;
+                    }
+                }
+            }
+        });
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
 
     @Override
