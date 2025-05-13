@@ -33,7 +33,7 @@ PlanWise 是一个功能完善的日程管理应用，支持添加、排序、�
 
 ```cmd
 cd planwise_server
-pip install -r requirements.txt
+pip install -r requirement.txt
 ```
 
 ### 2. 运行服务器
