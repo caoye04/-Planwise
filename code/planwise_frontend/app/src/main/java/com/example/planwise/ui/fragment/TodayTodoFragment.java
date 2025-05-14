@@ -66,6 +66,9 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
     private Date filterStartDate = null;
     private Date filterEndDate = null;
     private String filterTag = null;
+    
+    // 新的筛选状态变量
+    private int baseFilter = FILTER_ALL; 
 
     @Nullable
     @Override
@@ -98,12 +101,15 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         chipGroupFilter.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.chip_filter_all) {
                 currentFilter = FILTER_ALL;
+                baseFilter = FILTER_ALL; // 重置基础筛选
                 updateFilterHint(null); // 清除筛选提示
             } else if (checkedId == R.id.chip_filter_incomplete) {
                 currentFilter = FILTER_INCOMPLETE;
+                baseFilter = FILTER_INCOMPLETE; // 重置基础筛选
                 updateFilterHint("当前筛选：未完成"); // 更新筛选提示
             } else if (checkedId == R.id.chip_filter_completed) {
                 currentFilter = FILTER_COMPLETED;
+                baseFilter = FILTER_COMPLETED; // 重置基础筛选
                 updateFilterHint("当前筛选：已完成"); // 更新筛选提示
             }
 
@@ -202,6 +208,11 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
                     // Check if schedule matches the tag
                     if (filterTag != null && schedule.getCategory() != null) {
                         shouldInclude = schedule.getCategory().equals(filterTag);
+                        if (baseFilter == FILTER_INCOMPLETE) {
+                            shouldInclude = shouldInclude && !schedule.isCompleted();
+                        } else if (baseFilter == FILTER_COMPLETED) {
+                            shouldInclude = shouldInclude && schedule.isCompleted();
+                        }
                     }
                     break;
                 case FILTER_TODAY:
