@@ -54,12 +54,7 @@ public class ScheduleAdapter extends ListAdapter<Schedule, ScheduleAdapter.Sched
         holder.textViewCategory.setText(currentSchedule.getCategory());
         holder.checkBoxCompleted.setChecked(currentSchedule.isCompleted());
 
-        // 应用删除线样式如果已完成
-        if (currentSchedule.isCompleted()) {
-            holder.textViewTitle.setPaintFlags(holder.textViewTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-        } else {
-            holder.textViewTitle.setPaintFlags(holder.textViewTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-        }
+        
     }
 
     /**
@@ -132,11 +127,24 @@ public class ScheduleAdapter extends ListAdapter<Schedule, ScheduleAdapter.Sched
                     listener.onScheduleClick(getItem(position));
                 }
             });
-
             checkBoxCompleted.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (listener != null && position != RecyclerView.NO_POSITION) {
-                    listener.onCompletedToggle(getItem(position));
+                if (listener != null &&position != RecyclerView.NO_POSITION) {
+                    // 获取当前项并切换完成状态
+                    Schedule currentSchedule = getItem(position);
+                    boolean isCompleted = checkBoxCompleted.isChecked();
+
+                    // 立即应用删除线样式
+                    if (isCompleted) {
+                        textViewTitle.setPaintFlags(textViewTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                    } else {
+                        textViewTitle.setPaintFlags(textViewTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                    }
+
+                    // 调用接口方法更新数据模型
+                    if (listener != null) {
+                        listener.onCompletedToggle(currentSchedule);
+                    }
                 }
             });
         }
