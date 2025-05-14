@@ -12,5 +12,5 @@
 
 ![LOGO](doc/pic/LOGO.png)
 
-![LOGO](doc/pic/technology stack.png)
+![technology stack](doc/pic/technology stack.png)
 
