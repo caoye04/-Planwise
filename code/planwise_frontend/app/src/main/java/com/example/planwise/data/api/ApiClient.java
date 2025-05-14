@@ -11,7 +11,12 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-    private static final String BASE_URL = "http://183.173.20.128:8000/"; // 替换为你电脑的局域网IP
+
+    // 替换为你电脑的局域网IP
+    // 清华secure
+    //private static final String BASE_URL = "http://183.173.20.128:8000/";
+    // caoye家WIFI
+    private static final String BASE_URL = "http://192.168.1.5:8000/";
     private static Retrofit retrofit = null;
     private static ApiService apiService = null;
 

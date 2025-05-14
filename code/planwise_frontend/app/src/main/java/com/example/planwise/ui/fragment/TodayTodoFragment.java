@@ -295,31 +295,157 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         java.util.Calendar calendar = java.util.Calendar.getInstance();
         java.util.Date today = calendar.getTime();
 
-        // 创建3条默认日程，使用完整构造函数
+        // 今晚的任务
+        calendar.add(Calendar.HOUR, 4);
         Schedule schedule1 = new Schedule(
-                "完成Android作业",
-                "完成PlanWise应用开发",
-                today,
-                "实验室", // 位置
-                "学习", // 分类
-                false // 完成状态
+                "复习数据结构",
+                "准备明天的数据结构期中考试，重点复习树和图的算法，整理课堂笔记和习题",
+                calendar.getTime(),
+                "宿舍",
+                "学习",
+                false
         );
 
+        // 明天早上
+        calendar.add(Calendar.HOUR, 8);
         Schedule schedule2 = new Schedule(
-                "阅读专业书籍",
-                "阅读一小时专业相关书籍",
-                today,
+                "提交Java项目代码",
+                "完成代码评审修改，更新文档，提交到GitLab，发送邮件通知组长",
+                calendar.getTime(),
+                "实验室",
+                "工作",
+                false
+        );
+
+        // 明天下午
+        calendar.add(Calendar.HOUR, 6);
+        Schedule schedule3 = new Schedule(
+                "算法课程作业",
+                "完成第4章动态规划习题，整理课后练习，准备下周的课堂展示",
+                calendar.getTime(),
                 "图书馆",
                 "学习",
                 false
         );
 
-        Schedule schedule3 = new Schedule(
-                "健身锻炼",
-                "进行30分钟有氧运动",
-                today,
+        // 后天上午
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        Schedule schedule4 = new Schedule(
+                "项目组周会",
+                "汇报本周进度，讨论技术难点，确定下周任务分工",
+                calendar.getTime(),
+                "线上会议",
+                "工作",
+                false
+        );
+
+        // 后天下午
+        calendar.add(Calendar.HOUR, 5);
+        Schedule schedule5 = new Schedule(
+                "健身计划",
+                "力量训练日：深蹲4×12, 硬拉3×8, 核心训练15分钟",
+                calendar.getTime(),
                 "健身房",
-                "个人",
+                "健康",
+                false
+        );
+
+        // 3天后
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        Schedule schedule6 = new Schedule(
+                "准备英语演讲",
+                "准备下周的商务英语演讲，主题：可持续发展，准备PPT和讲稿",
+                calendar.getTime(),
+                "自习室",
+                "学习",
+                false
+        );
+
+        // 4天后
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        Schedule schedule7 = new Schedule(
+                "家庭聚餐",
+                "奶奶生日聚餐，提前订蛋糕，准备礼物，联系其他家人",
+                calendar.getTime(),
+                "家里",
+                "家庭",
+                false
+        );
+
+        // 5天后
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        Schedule schedule8 = new Schedule(
+                "项目需求评审",
+                "参加新项目需求评审会，准备技术可行性分析报告",
+                calendar.getTime(),
+                "会议室",
+                "工作",
+                false
+        );
+
+        // 一周后
+        calendar.add(Calendar.DAY_OF_MONTH, 2);
+        Schedule schedule9 = new Schedule(
+                "数据库实验",
+                "完成数据库高级应用实验，准备实验报告和演示文档",
+                calendar.getTime(),
+                "实验室",
+                "学习",
+                false
+        );
+
+        // 10天后
+        calendar.add(Calendar.DAY_OF_MONTH, 3);
+        Schedule schedule10 = new Schedule(
+                "月度购物",
+                "采购生活用品和食材，关注优惠活动，记得带购物清单",
+                calendar.getTime(),
+                "超市",
+                "购物",
+                false
+        );
+
+        // 两周后
+        calendar.add(Calendar.DAY_OF_MONTH, 4);
+        Schedule schedule11 = new Schedule(
+                "项目验收报告",
+                "整理项目文档，准备验收演示，完成结项报告",
+                calendar.getTime(),
+                "公司",
+                "工作",
+                false
+        );
+
+        // 半个月后
+        calendar.add(Calendar.DAY_OF_MONTH, 1);
+        Schedule schedule12 = new Schedule(
+                "朋友聚会",
+                "老友聚会，地点：火锅店，组织活动和游戏",
+                calendar.getTime(),
+                "restaurants",
+                "社交",
+                false
+        );
+
+        // 三周后
+        calendar.add(Calendar.DAY_OF_MONTH, 5);
+        Schedule schedule13 = new Schedule(
+                "软件工程答辩",
+                "准备项目答辩PPT，整理源代码，进行演示排练",
+                calendar.getTime(),
+                "实验室",
+                "学习",
+                false
+        );
+
+        // 一个月后
+        calendar.add(Calendar.DAY_OF_MONTH, 7);
+        Schedule schedule14 = new Schedule(
+                "休闲旅行规划",
+                "规划端午假期出行，订票订房，制定行程安排",
+                calendar.getTime(),
+                "家里",
+                "休闲",
                 false
         );
 
@@ -327,6 +453,17 @@ public class TodayTodoFragment extends Fragment implements ScheduleAdapter.OnSch
         viewModel.insertSchedule(schedule1);
         viewModel.insertSchedule(schedule2);
         viewModel.insertSchedule(schedule3);
+        viewModel.insertSchedule(schedule4);
+        viewModel.insertSchedule(schedule5);
+        viewModel.insertSchedule(schedule6);
+        viewModel.insertSchedule(schedule7);
+        viewModel.insertSchedule(schedule8);
+        viewModel.insertSchedule(schedule9);
+        viewModel.insertSchedule(schedule10);
+        viewModel.insertSchedule(schedule11);
+        viewModel.insertSchedule(schedule12);
+        viewModel.insertSchedule(schedule13);
+        viewModel.insertSchedule(schedule14);
     }
 
     /**
