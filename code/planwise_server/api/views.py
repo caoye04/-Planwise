@@ -50,7 +50,7 @@ def get_ai_suggestion(request):
             # 构建提示词
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
             
-            # 获取日程信息
+            # 获取TODO信息
             title = schedule_data.get('title', '')
             description = schedule_data.get('description', '')
             scheduled_date = schedule_data.get('scheduled_date', '')
@@ -58,7 +58,7 @@ def get_ai_suggestion(request):
             category = schedule_data.get('category', '')
             is_completed = schedule_data.get('is_completed', False)
             
-            # 构建提示文本
+            # 构建prompt
             prompt = f"""现在是{current_time}，我计划在{location}于{scheduled_date}前完成{title}，"""
             if description:
                 prompt += f"其细节是{description}，"
@@ -70,7 +70,7 @@ def get_ai_suggestion(request):
             2. 使用平实的聊天语气
             3. 直接给出建议，不要添加"以下是我的建议"之类的开场白
             4. 不要在回复结尾添加"需要更多帮助吗"、"还有其他问题吗"之类的结束语
-            5. 可以内容丰富一点，但要整体有条例，是一个很好的建议视角
+            5. 可以内容丰富一点，但要整体有条理，希望是一个很好的建议视角
             """
             
             # 调用 DeepSeek API
@@ -86,7 +86,7 @@ def get_ai_suggestion(request):
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.7,
-                "max_tokens": 300
+                "max_tokens": 600
             }
             
             response = requests.post(

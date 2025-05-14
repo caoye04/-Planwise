@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navigation_today">
+
+    <fragment
+        android:id="@+id/navigation_today"
+        android:name="com.example.planwise.ui.fragment.TodayTodoFragment"
+        android:label="今日待办"
+        tools:layout="@layout/fragment_today_todo" />
+
+    <fragment
+        android:id="@+id/navigation_calendar"
+        android:name="com.example.planwise.ui.fragment.CalendarFragment"
+        android:label="日程"
+        tools:layout="@layout/fragment_calendar" />
+
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.example.planwise.ui.fragment.ProfileFragment"
+        android:label="我的"
+        tools:layout="@layout/fragment_profile" />
+</navigation>
